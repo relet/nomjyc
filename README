@@ -1,0 +1,2 @@
+Nomjyc is a code nomic sandbox in jython.
+It is meant to be run as cgi script within a tomcat/jython web server. 

@@ -1,0 +1,59 @@
+players:
+  relet: {pass: 4091b13066859bd6fa7612d770dbb172930e9df4, score: 1}
+  apr: {pass: 6ccda7b54f0171436b5a5bafecbddc860e56498e, score: 0}
+rules:
+- {author: a priori, code: "\nimport hashlib\n\nif \"user\" in self.parameters and\
+    \ \"pass\" in self.parameters: # if parameters \"user\" and \"pass\" are set\n\
+    \  if self.data[\"players\"][self.parameters[\"user\"][0]]:  # and the user actually\
+    \ exists in our list\n    # check the hash of the provided password against the\
+    \ one we have stored\n    if hashlib.sha1(self.parameters[\"pass\"][0]+self.salt).hexdigest()\
+    \ == self.data[\"players\"][self.parameters[\"user\"][0]][\"pass\"]:\n      self.session[\"\
+    validated\"] = self.parameters[\"user\"][0] # set session->validated to contain\
+    \ the name of the validated user\n    else:\n      print \"Wrong password\"\n\
+    \  else:\n    print \"No such user\"\n", title: validate user}
+- {author: a priori, code: "\nfrom org.python.util import PythonInterpreter\nfrom\
+    \ datetime import datetime\n\nif \"validated\" in self.session:            # if\
+    \ we have a validated user\n  if \"proposal\" in self.parameters and \"name\"\
+    \ in self.parameters: # and parameters name and proposal are set \n    name =\
+    \ self.parameters[\"name\"][0]      # get proposal name\n    code = self.parameters[\"\
+    proposal\"][0]  # get proposal code\n    user = self.session[\"validated\"]  \
+    \     # get author name\n\n    interpreter = PythonInterpreter()      # instantiate\
+    \ an interpreter \n    interpreter.compile(code)              # try to compile\
+    \ the code - this will throw an exception if it does not\n\n    if not \"proposals\"\
+    \ in self.data:       # create some data structures if they do not exist\n   \
+    \   self.data[\"proposals\"] = {}\n    if not user in self.data[\"proposals\"\
+    ]: # ...\n      self.data[\"proposals\"][user] = {}    # add add a proposal structure\
+    \ (below)\n    self.data[\"proposals\"][user][name] = {\"code\":code, \"support\"\
+    :{}, \"creation\":datetime.utcnow()}\n    print \"Proposal accepted.\"\n", title: submit proposal}
+- {author: a priori, code: "\nif \"validated\" in self.session: # if we have a validated\
+    \ user\n  if \"support\" in self.parameters and \"author\" in self.parameters\
+    \ and \"name\" in self.parameters:\n    user   = self.session[\"validated\"]\n\
+    \    author = self.parameters[\"author\"][0]\n    name   = self.parameters[\"\
+    name\"][0]\n    self.data[\"proposals\"][author][name][\"support\"][user] = (self.parameters[\"\
+    support\"][0]==\"yes\")\n", title: support proposal}
+- {author: a priori, code: "\nfor author, proposals in self.data[\"proposals\"].iteritems():\
+    \ # for all proposal authors\n  for title, data in proposals.iteritems():    \
+    \              # and all their proposals\n    if len(data[\"support\"]) == len(self.data[\"\
+    players\"]):      # if we have the required number of votes\n      rejected =\
+    \ False\n      for player, vote in data[\"support\"].iteritems():       # confirm\
+    \ that all votes are actually positive\n        if vote != True:\n          rejected\
+    \ = True\n          break;\n      if not rejected:\n         proposals.remove(title)\
+    \ # remove proposal from proposal list and (below) add it as a rule\n        \
+    \ self.data[\"rules\"].add({\"title\":title, \"author\":author, \"code\":data[\"\
+    code\"]})\n         self.data[\"players\"][author][\"score\"] += 1 # if that worked,\
+    \ increase player score by one.\n", title: tally}
+- {author: a priori, code: "\nfor name, info in self.data[\"players\"].iteritems():\
+    \ # for all players \n  if info[\"score\"]>=100:  # if the score is at or above\
+    \ 100 points\n    info[\"winner\"]=True   # we have a winner, or several\n   \
+    \ self.data[\"rules\"]=[] # freeze the game\n", title: win!}
+- {author: relet, code: "import hashlib\n\nif \"register user\" in self.parameters:\r\
+    \n  if \"user\" in self.parameters and \"pass\" in self.parameters: # if parameters\
+    \ \"user\" and \"pass\" are set\r\n    if not self.data[\"players\"][self.parameters[\"\
+    user\"][0]]:  # and the user doesn't exist in our list\r\n    # check the hash\
+    \ of the provided password against the one we have stored\r\n      self.data[\"\
+    players\"][self.parameters[\"user\"][0]] = {\"pass\":hashlib.sha1(self.parameters[\"\
+    pass\"][0]+self.salt).hexdigest(), \"score\":0}\r\n    else:\r\n      print \"\
+    That user name is already taken!\"\r\n  else:\r\n    print \"You can't register\
+    \ without providing a user and pass!\"", title: register user}
+proposals:
+  relet: {}
